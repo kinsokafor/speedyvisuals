@@ -53,7 +53,6 @@ class Project
         }
 
         $self = new self;
-
         $meta = [];
 
         foreach ($data as $key => $value) {
@@ -62,15 +61,105 @@ class Project
             }
         }
 
-        $id = $self->dbTable->insert("svproject", "isssds", [
+        $insertId = $self->dbTable->insert("svproject", "isss", [
             "user_id" => (int) $user->user_id ?? 0,
             "description" => $description ?? "",
             "type" => $type ?? "not categorized",
             "meta" => json_encode($meta)
         ])->execute();
 
-        return $self->dbTable->select("svproject")
-            ->where("id", $id)
+        return $self->getById($insertId);
+    }
+
+    public function getById($id)
+    {
+        return $this->dbTable->select("svproject")
+            ->where("id", $id, "i")
+            ->limit(1)
             ->execute()->row();
+    }
+
+    public function getAllByUser($userId, $limit = 20, $offset = 0)
+    {
+        return $this->dbTable->select("svproject")
+            ->where("user_id", $userId, "i")
+            ->orderBy("created_at", "DESC")
+            ->limit($limit)
+            ->offset($offset)
+            ->execute()->rows();
+    }
+
+    public function getAll($limit = 100, $offset = 0)
+    {
+        return $this->dbTable->select("svproject")
+            ->orderBy("created_at", "DESC")
+            ->limit($limit)
+            ->offset($offset)
+            ->execute()->rows();
+    }
+
+    public function search($filters = [], $limit = 50, $offset = 0)
+    {
+        $query = $this->dbTable->select("svproject");
+
+        if (!empty($filters['user_id'])) {
+            $query->where("user_id", $filters['user_id'], "i");
+        }
+        if (!empty($filters['status'])) {
+            $query->and()->where("status", $filters['status']);
+        }
+        if (!empty($filters['type'])) {
+            $query->and()->where("type", $filters['type']);
+        }
+        if (!empty($filters['date_from']) && !empty($filters['date_to'])) {
+            $query->and()->whereBetween("created_at", $filters['date_from'], $filters['date_to']);
+        }
+        if (!empty($filters['keyword'])) {
+            $query->and()->whereLike("description", "%" . $filters['keyword'] . "%");
+        }
+
+        return $query->orderBy("created_at", "DESC")
+            ->limit($limit)
+            ->offset($offset)
+            ->execute()->rows();
+    }
+
+    public function update($id, $data)
+    {
+        $project = $this->getById($id);
+        if (!$project) return false;
+
+        $updateFields = [];
+        $meta = json_decode($project->meta ?? '{}', true);
+
+        foreach ($data as $key => $value) {
+            if (in_array($key, $this->keys)) {
+                $updateFields[$key] = $value;
+            } else {
+                $meta[$key] = $value;
+            }
+        }
+
+        $updateFields['meta'] = json_encode($meta);
+
+        return $this->dbTable->update("svproject")
+            ->setMultiple($updateFields)
+            ->where("id", $id, "i")
+            ->execute();
+    }
+
+    public function changeStatus($id, $status)
+    {
+        return $this->dbTable->update("svproject")
+            ->set("status", $status)
+            ->where("id", $id, "i")
+            ->execute();
+    }
+
+    public function delete($id)
+    {
+        return $this->dbTable->delete("svproject")
+            ->where("id", $id, "i")
+            ->execute();
     }
 }
