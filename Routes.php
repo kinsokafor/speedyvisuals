@@ -13,6 +13,7 @@ use Public\Modules\speedyvisuals\Classes\Project\Message;
 
 require_once "Public/Modules/speedyvisuals/Routes/Users.php";
 require_once "Public/Modules/speedyvisuals/Routes/Projects.php";
+require_once "Public/Modules/speedyvisuals/Routes/Portfolio.php";
 
 // API ROUTE GROUP FOR SPEEDYVISUALS
 $router->group('/speedyvisuals/api', function() use ($router) {

@@ -89,6 +89,15 @@ class Project
             ->execute()->rows();
     }
 
+    public function getCountByUser($userId, $status = "pending")
+    {
+        return $this->dbTable->select("svproject", "count(id) as c")
+            ->where("user_id", $userId, "i")
+            ->where("status", $status, "s")
+            ->orderBy("created_at", "DESC")
+            ->execute()->row()->c;
+    }
+
     public function getAll($limit = 100, $offset = 0)
     {
         return $this->dbTable->select("svproject")

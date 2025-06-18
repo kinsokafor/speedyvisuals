@@ -14,16 +14,17 @@ $router->group('/speedyvisuals/api/project', function() use ($router) {
     $router->post('/new', function() {
         $request = new Requests;
         $params = json_decode(file_get_contents('php://input'), true);
-        $request->evoAction($params)->auth()->execute(fn() => Project::new($params));
+        $request->evoAction($params)->auth(13,14)->execute(fn() => Project::new($params));
     });
 
     // Fetch all projects by a user
-    $router->get('/user/{user_id}', function($params) {
+    $router->post('/user/{user_id}', function($params) {
         $request = new Requests;
+        $params = json_decode(file_get_contents('php://input'), true);
         $request->evoAction($params)->auth()->execute(fn() => (new Project)->getAllByUser($params['user_id']));
     });
 
-    $router->get('/mine', function($params) {
+    $router->post('/mine', function($params) {
         $session = Session::getInstance();
 
         if(!($user = $session->getResourceOwner())) {
@@ -32,6 +33,7 @@ $router->group('/speedyvisuals/api/project', function() use ($router) {
         }
 
         $request = new Requests;
+        $params = json_decode(file_get_contents('php://input'), true);
         $request->evoAction($params)->auth()->execute(fn() => (new Project)->getAllByUser($user->user_id));
     });
 
@@ -40,5 +42,32 @@ $router->group('/speedyvisuals/api/project', function() use ($router) {
         $request = new Requests;
         $params = json_decode(file_get_contents('php://input'), true);
         $request->evoAction($params)->auth()->execute(fn() => (new Project)->search($params));
+    });
+});
+
+$router->group('/speedyvisuals/api/project/stats', function() use ($router) {
+
+    // -----------------------
+    // PROJECT STATISTICS ENDPOINTS
+    // -----------------------
+
+    // Fetch all projects by a user
+    $router->post('/user/{user_id}', function($params) {
+        $request = new Requests;
+        $params = json_decode(file_get_contents('php://input'), true);
+        $request->evoAction($params)->auth()->execute(fn() => (new Project)->getCountByUser($params['user_id'], $params['status'] ?? 'pending'));
+    });
+
+    $router->post('/mine', function($params) {
+        $session = Session::getInstance();
+
+        if(!($user = $session->getResourceOwner())) {
+            http_response_code(401);
+            return "User not logged in";
+        }
+
+        $request = new Requests;
+        $params = json_decode(file_get_contents('php://input'), true);
+        $request->evoAction($params)->auth()->execute(fn() => (new Project)->getCountByUser($user->user_id, $params['status'] ?? 'pending'));
     });
 });
